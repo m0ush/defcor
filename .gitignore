@@ -1,0 +1,4 @@
+*.md
+*.csv
+corpactions/
+dboutline.toml
