@@ -1,7 +1,8 @@
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE TABLE companies (
-    id       VARCHAR PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS companies (
+    id       uuid NOT NULL DEFAULT gen_random_uuid(),
     name     TEXT NOT NULL,
     cik      int NOT NULL UNIQUE,
     website  TEXT,
@@ -10,11 +11,14 @@ CREATE TABLE companies (
     ceo      TEXT,
     state    VARCHAR,
     city     TEXT,
-    zip      VARCHAR
+    zip      VARCHAR,
+    PRIMARY KEY (id)
+    -- maybe add datetime added
+    -- maybe add datetime ended
 );
 
-CREATE TABLE stocks (
-    id      VARCHAR PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS stocks (
+    id      uuid NOT NULL DEFAULT gen_random_uuid(),
     comid   VARCHAR REFERENCES companies(id),
     symbol  VARCHAR NOT NULL UNIQUE,
     name    TEXT NOT NULL,
@@ -24,7 +28,7 @@ CREATE TABLE stocks (
     country VARCHAR DEFAULT 'US'
 );
 
-CREATE TABLE prices (
+CREATE TABLE IF NOT EXISTS prices (
     time    TIMESTAMP,
     secid   VARCHAR REFERENCES stocks(id),
     open    DOUBLE PRECISION,
@@ -49,8 +53,7 @@ SELECT create_hypertable(
     chunk_time_interval => INTERVAL '1 day'
 );
 
-CREATE TABLE dividends (
-    id        VARCHAR PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS dividends (
     symbol    VARCHAR REFERENCES stocks(id),
     exDate    TIMESTAMP,
     decDate   TIMESTAMP,
@@ -59,37 +62,16 @@ CREATE TABLE dividends (
     amount    DOUBLE PRECISION,
     flag      TEXT,
     currency  VARCHAR,
-    frequency VARCHAR
+    frequency VARCHAR,
+    PRIMARY KEY(symbol, exDate)
 );
 
-CREATE TABLE splits (
-    id         VARCHAR PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS splits (
     symbol     VARCHAR REFERENCES stocks(id),
     exDate     TIMESTAMP,
     decDate    TIMESTAMP,
     ratio      NUMERIC,
     toFactor   NUMERIC,
-    fromFactor NUMERIC
-);
-
-CREATE TABLE strategies (
-    id    VARCHAR PRIMARY KEY,
-    desc  TEXT,
-    start TIMESTAMP DEFAULT timezone('utc', now())
-);
-
-CREATE TABLE positions (
-    time    TIMESTAMP,
-    stratid VARCHAR REFERENCES strategies(id),
-    secid   VARCHAR REFERENCES stocks(id),
-    shares  NUMERIC
-);
-
-CREATE INDEX ON positions(TIME DESC, strategy);
-
-SELECT create_hypertable(
-    'positions', 
-    'time', 
-    create_default_indexes => FALSE,
-    chunk_time_interval => INTERVAL '1 day'
+    fromFactor NUMERIC,
+    PRIMARY KEY(symbol, exDate)
 );

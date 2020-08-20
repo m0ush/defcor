@@ -8,13 +8,15 @@ import (
 	"os"
 	"path"
 
+	"github.com/jackc/pgtype"
+	pgtypeuuid "github.com/jackc/pgtype/ext/gofrs-uuid"
 	"github.com/jackc/pgx/v4"
 )
 
 const baseURL = "https://sandbox.iexapis.com"
 
-// Company type models a company profile endpoint
-type Company struct {
+// Profile type models a company profile endpoint
+type Profile struct {
 	Symbol      string `json:"symbol"`
 	CompanyName string `json:"companyName"`
 	Industry    string `json:"industry"`
@@ -28,18 +30,27 @@ type Company struct {
 	Country     string `json:"country"`
 }
 
-// CompanyWithCik enhances data in Company with SEC CIK code
-type CompanyWithCik struct {
-	Company
-	CIK int
+// Company enhances data in Profile with SEC CIK code
+type Company struct {
+	Symbol      string
+	CompanyName string
+	Industry    string
+	Website     string
+	CEO         string
+	Sector      string
+	State       string
+	City        string
+	Zip         string
+	Country     string
+	CIK         int
 }
 
 // Stock type models a stock from a company endpoint
 type Stock struct {
-	Symbol      string `json:"symbol"`
-	CompanyName string `json:"companyName"`
-	IssueType   string `json:"issueType"`
-	Country     string `json:"country"`
+	Symbol      string
+	CompanyName string
+	IssueType   string
+	Country     string
 }
 
 // Dividend type models a dividend series endpoint
@@ -92,6 +103,12 @@ func CreateConn() (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Register UUID data type for connection
+	c.ConnInfo().RegisterDataType(pgtype.DataType{
+		Value: &pgtypeuuid.UUID{},
+		Name:  "uuid",
+		OID:   pgtype.UUIDOID,
+	})
 	return &Conn{c}, nil
 }
 
@@ -100,9 +117,9 @@ func (c *Conn) Disconnect() error {
 	return c.c.Close(context.Background())
 }
 
-// Profile retrieves a company profile
-func Profile(symbol string) (*CompanyWithCik, error) {
-	base, err := url.Parse("https://sandbox.iexapis.com")
+// NewProfile gets IEX data
+func NewProfile(symbol string) (*Profile, error) {
+	base, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -121,17 +138,86 @@ func Profile(symbol string) (*CompanyWithCik, error) {
 	}
 	defer resp.Body.Close()
 
-	var company Company
-	if err := json.NewDecoder(resp.Body).Decode(&company); err != nil {
+	var cp Profile
+	if err := json.NewDecoder(resp.Body).Decode(&cp); err != nil {
 		return nil, err
 	}
+	return &cp, nil
+}
 
-	cik := ccm.Find(symbol)
+// Company returns Company data
+func (cp Profile) Company() Company {
+	return Company{
+		Symbol:      cp.Symbol,
+		CompanyName: cp.CompanyName,
+		Industry:    cp.Industry,
+		Website:     cp.Website,
+		CEO:         cp.CEO,
+		Sector:      cp.Sector,
+		State:       cp.State,
+		City:        cp.City,
+		Zip:         cp.Zip,
+		Country:     cp.Country,
+		CIK:         ccm.Find(cp.Symbol),
+	}
+}
 
-	return &CompanyWithCik{company, cik}, nil
+// Stock returns Stock data
+func (cp Profile) Stock() Stock {
+	return Stock{
+		Symbol:      cp.Symbol,
+		CompanyName: cp.CompanyName,
+		IssueType:   cp.IssueType,
+		Country:     cp.Country,
+	}
 }
 
 // InsertCompany inserts a company into a database
-func (c *Conn) InsertCompany(co *Company) error {
+func (c *Conn) InsertCompany(co Company) error {
+	sqlStatement := `
+	INSERT INTO companies (name, cik, website, industry, sector, ceo, state, city, zip)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	RETURNING id`
+
+	tx, err := c.c.Begin(context.Background())
+	if err != nil {
+		return nil
+	}
+	defer tx.Rollback(context.Background())
+
+	_, err = tx.Exec(context.Background(), sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// InsertStock inserts a stock record into a database
+func (c *Conn) InsertStock(stk Stock) error {
+	sqlStatement := `
+	INSERT INTO stocks (symbol, name, sectype)
+	VALUES ($1, $2, $3)
+	RETURNING id`
+
+	tx, err := c.c.Begin(context.Background())
+	if err != nil {
+		return nil
+	}
+	defer tx.Rollback(context.Background())
+
+	_, err = tx.Exec(context.Background(), sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return err
+	}
 	return nil
 }

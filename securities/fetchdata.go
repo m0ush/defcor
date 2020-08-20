@@ -1,4 +1,4 @@
-package fetcher
+package securities
 
 import (
 	"encoding/csv"
@@ -6,27 +6,23 @@ import (
 	"strings"
 )
 
-const csvfilename = "allsecurities.csv"
+const csvfilename = "securities/allsecurities.csv"
 
-// SecuritySlice creates a slice of security symbols
-type SecuritySlice struct {
-	filename string
-	symbols  []string
-}
+// Securities is a slice of security symbols
+type Securities []string
 
 // NewSecuritySlice instatiates the security slice
-func NewSecuritySlice(filename string) *SecuritySlice {
-	file, err := os.Open(filename)
+func NewSecuritySlice() (Securities, error) {
+	file, err := os.Open(csvfilename)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer file.Close()
 	lines, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	symbols := parseSecurities(lines)
-	return &SecuritySlice{symbols: symbols}
+	return parseSecurities(lines), nil
 }
 
 func normalizeSymbol(symbol string) string {

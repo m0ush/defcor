@@ -6,9 +6,13 @@ import (
 )
 
 func main() {
-	aapl, err := db.Profile("AAPL")
+	aapl, err := db.NewProfile("AAPL")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(aapl)
+	co := aapl.Company()
+	stk := aapl.Stock()
+
+	fmt.Println(co)
+	fmt.Println(stk)
 }
