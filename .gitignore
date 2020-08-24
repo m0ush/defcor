@@ -1,3 +1,4 @@
 *.md
 corpactions/
 dboutline.toml
+.vscode/
