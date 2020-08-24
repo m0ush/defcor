@@ -43,12 +43,12 @@ func makeRequest() ([]byte, error) {
 }
 
 // Securities returns all active securities and their accompanied data
-func Securities() ([]Stock, error) {
+func Securities() ([]*Stock, error) {
 	data, err := makeRequest()
 	if err != nil {
 		return nil, err
 	}
-	var secs []Stock
+	var secs []*Stock
 	if err := json.Unmarshal(data, &secs); err != nil {
 		return nil, err
 	}

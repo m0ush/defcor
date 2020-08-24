@@ -3,13 +3,13 @@ CREATE EXTENSION IF NOT EXISTS "timescaledb" CASCADE;
 CREATE TABLE IF NOT EXISTS stocks (
 	secid serial PRIMARY KEY,
 	symbol varchar(6) NOT NULL UNIQUE,
-	name varchar(30) NOT NULL,
-	date_added date DEFAULT today (),
+	name varchar(50) NOT NULL,
+	date_added date DEFAULT CURRENT_DATE,
     active boolean DEFAULT TRUE,
     sectype varchar(3),
     iexid char(20),
     figi char(12),
-    curreny char(3),
+    currency char(3),
     region char(2),
     cik integer
 );
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS splits (
 	ratio numeric(9, 6),
 	toFactor numeric(4, 2),
 	fromFactor numeric(4, 2),
-	PRIMARY KEY (secid, exDate),
+	PRIMARY KEY (secid, exDate)
 );
 
 CREATE INDEX ON prices (time DESC, secid);

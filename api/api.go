@@ -11,7 +11,7 @@ type Stock struct {
 	Currency string `json:"currency"`
 	IsActive bool   `json:"isEnabled"`
 	Figi     string `json:"figi"`
-	Cik      string `json:"cik"`
+	Cik      int    `json:"cik"`
 }
 
 // Dividend type models a dividend series endpoint
