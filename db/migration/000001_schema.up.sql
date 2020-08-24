@@ -1,7 +1,7 @@
-CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+CREATE EXTENSION IF NOT EXISTS "timescaledb" CASCADE;
 
 CREATE TABLE IF NOT EXISTS stocks (
-	secid serial,
+	secid serial PRIMARY KEY,
 	symbol varchar(6) NOT NULL UNIQUE,
 	name varchar(30) NOT NULL,
 	date_added date DEFAULT today (),
@@ -11,13 +11,12 @@ CREATE TABLE IF NOT EXISTS stocks (
     figi char(12),
     curreny char(3),
     region char(2),
-    cik integer,
-    CONSTRAINT pk_stocks PRIMARY KEY secid
+    cik integer
 );
 
 CREATE TABLE IF NOT EXISTS prices (
 	time timestamp,
-	secid integer,
+	secid integer REFERENCES stocks (secid),
 	open numeric(12, 6),
 	close numeric(12, 6),
 	high numeric(12, 6),
@@ -28,12 +27,11 @@ CREATE TABLE IF NOT EXISTS prices (
 	uhigh numeric(12, 6),
 	ulow numeric(12, 6),
 	uvolume integer,
-	CONSTRAINT pk_prices PRIMARY KEY (time, secid),
-    CONSTRAINT fk_stocks_prices FOREIGN KEY secid REFERENCES stocks (secid)
+	PRIMARY KEY (time, secid)
 );
 
 CREATE TABLE IF NOT EXISTS dividends (
-	secid integer,
+	secid integer REFERENCES stocks (secid),
 	exDate timestamp,
 	decDate timestamp,
 	recDate timestamp,
@@ -42,19 +40,17 @@ CREATE TABLE IF NOT EXISTS dividends (
 	flag varchar(120),
 	currency varchar(4),
 	frequency varchar(20),
-	CONSTRAINT pk_dividends PRIMARY KEY (secid, exDate),
-    CONSTRAINT fk_stocks_dividends FOREIGN KEY secid REFERENCES stocks (secid)
+    PRIMARY KEY (secid, exDate)
 );
 
 CREATE TABLE IF NOT EXISTS splits (
-	secid integer,
+	secid integer REFERENCES stocks (secid),
 	exDate timestamp,
 	decDate timestamp,
 	ratio numeric(9, 6),
 	toFactor numeric(4, 2),
 	fromFactor numeric(4, 2),
-	CONSTRAINT pk_splits PRIMARY KEY (secid, exDate),
-    CONSTRAINT fk_stocks_splits FOREIGN KEY secid REFERENCES stocks (secid)
+	PRIMARY KEY (secid, exDate),
 );
 
 CREATE INDEX ON prices (time DESC, secid);
