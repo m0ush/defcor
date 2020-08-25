@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"defcor/api"
+	"defcor/iex"
 	"os"
 
 	"github.com/jackc/pgx/v4"
@@ -28,7 +28,7 @@ func (c *Conn) Close() error {
 }
 
 // InsertStock inserts a stock record into a database
-func (c *Conn) InsertStock(s *api.Stock) (int, error) {
+func (c *Conn) InsertStock(s *iex.Stock) (int, error) {
 	sql := `INSERT INTO stocks (
 		symbol, name, date_added, active, sectype, iexid, figi, currency, region, cik
 	)
@@ -45,15 +45,15 @@ func (c *Conn) InsertStock(s *api.Stock) (int, error) {
 }
 
 // SeedStocks inserts all stocks into the db
-func (c *Conn) SeedStocks() error {
-	stks, err := api.Securities()
-	if err != nil {
-		panic(err)
-	}
-	for _, s := range stks {
-		if _, err := c.InsertStock(s); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+//func (c *Conn) SeedStocks() error {
+//	stks, err := iex.Securities()
+//	if err != nil {
+//		panic(err)
+//	}
+//	for _, s := range stks {
+//		if _, err := c.InsertStock(s); err != nil {
+//			return err
+//		}
+//	}
+//	return nil
+//}

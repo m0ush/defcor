@@ -47,9 +47,9 @@ CREATE TABLE IF NOT EXISTS splits (
 	secid integer REFERENCES stocks (secid),
 	exDate timestamp,
 	decDate timestamp,
-	ratio numeric(9, 6),
-	toFactor numeric(4, 2),
-	fromFactor numeric(4, 2),
+	ratio numeric(10, 6),
+	toFactor numeric(7, 2),
+	fromFactor numeric(7, 2),
 	PRIMARY KEY (secid, exDate)
 );
 

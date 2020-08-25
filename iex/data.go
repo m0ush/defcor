@@ -1,4 +1,4 @@
-package api
+package iex
 
 // Stock represents a single Stock
 type Stock struct {
@@ -11,21 +11,21 @@ type Stock struct {
 	Currency string `json:"currency"`
 	IsActive bool   `json:"isEnabled"`
 	Figi     string `json:"figi"`
-	Cik      int    `json:"cik"`
+	Cik      string `json:"cik"`
 }
 
 // Dividend type models a dividend series endpoint
 type Dividend []struct {
-	Symbol       string  `json:"symbol"`
-	ExDate       string  `json:"exDate"`
-	PaymentDate  string  `json:"paymentDate"`
-	RecordDate   string  `json:"recordDate"`
-	DeclaredDate string  `json:"declaredDate"`
-	Amount       float64 `json:"amount"`
-	Flag         string  `json:"flag"`
-	Currency     string  `json:"currency"`
-	Description  string  `json:"description"`
-	Frequency    string  `json:"frequency"`
+	Symbol       string `json:"symbol"`
+	ExDate       string `json:"exDate"`
+	PaymentDate  string `json:"paymentDate"`
+	RecordDate   string `json:"recordDate"`
+	DeclaredDate string `json:"declaredDate"`
+	Amount       string `json:"amount"`
+	Flag         string `json:"flag"`
+	Currency     string `json:"currency"`
+	Description  string `json:"description"`
+	Frequency    string `json:"frequency"`
 }
 
 // Split type models a split series endpoint
