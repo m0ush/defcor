@@ -42,11 +42,11 @@ type Split []struct {
 // PriceHistory type models a price history series endpoint
 type PriceHistory []struct {
 	Date    string  `json:"date"`
-	Open    float64 `json:"open"`
-	High    float64 `json:"high"`
-	Low     float64 `json:"low"`
-	Close   float64 `json:"close"`
-	Volume  int     `json:"volume"`
+	AOpen   float64 `json:"open"`
+	AHigh   float64 `json:"high"`
+	ALow    float64 `json:"low"`
+	AClose  float64 `json:"close"`
+	AVolume int     `json:"volume"`
 	UOpen   float64 `json:"uOpen"`
 	UHigh   float64 `json:"uHigh"`
 	ULow    float64 `json:"uLow"`

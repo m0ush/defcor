@@ -17,16 +17,16 @@ CREATE TABLE IF NOT EXISTS stocks (
 CREATE TABLE IF NOT EXISTS prices (
 	time timestamp,
 	secid integer REFERENCES stocks (secid),
-	open numeric(12, 6),
-	close numeric(12, 6),
-	high numeric(12, 6),
-	low numeric(12, 6),
-	volume integer,
 	uopen numeric(12, 6),
 	uclose numeric(12, 6),
 	uhigh numeric(12, 6),
 	ulow numeric(12, 6),
 	uvolume integer,
+	aopen numeric(12, 6),
+	aclose numeric(12, 6),
+	ahigh numeric(12, 6),
+	alow numeric(12, 6),
+	avolume integer,
 	PRIMARY KEY (time, secid)
 );
 

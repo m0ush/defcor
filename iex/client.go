@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"regexp"
 	"time"
 )
 
@@ -48,7 +49,16 @@ func (c *Client) AllStocks() ([]Stock, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&stks); err != nil {
 		return nil, err
 	}
-	return stks, nil
+
+	re := regexp.MustCompile(`cs|ad`)
+	var fstks []Stock
+	for _, s := range stks {
+		if len(s.Cik) == 0 || !re.MatchString(s.Type) {
+			continue
+		}
+		fstks = append(fstks, s)
+	}
+	return fstks, nil
 }
 
 // Prices returns the historical prices for a stock
