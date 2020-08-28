@@ -43,3 +43,25 @@ func (c *Conn) InsertStock(s iex.Stock) (int, error) {
 	}
 	return id, nil
 }
+
+// Symbols returns a list of all symbols in the stocks table
+func (c *Conn) Symbols() ([]string, error) {
+	sql := `SELECT symbol FROM stocks`
+	rows, err := c.c.Query(context.Background(), sql)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var syms []string
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(&s); err != nil {
+			return nil, err
+		}
+		syms = append(syms, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return syms, nil
+}
