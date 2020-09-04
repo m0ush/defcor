@@ -1,4 +1,5 @@
-*.md
+notes.md
 corpactions/
-dboutline.toml
+securities/
 .vscode/
+.DS_Store
