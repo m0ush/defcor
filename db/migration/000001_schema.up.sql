@@ -14,9 +14,7 @@ CREATE TABLE IF NOT EXISTS stocks (
     cik integer
 );
 
--- Likely need to partition
--- Possibly verticially by unadjusted/adjusted
--- Possible horizontally over time too
+-- Likely need to partition verticially by unadj/adj
 CREATE TABLE IF NOT EXISTS prices (
 	date date,
 	secid integer REFERENCES stocks (secid),
