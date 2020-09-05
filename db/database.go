@@ -138,18 +138,8 @@ func (c *Conn) InsertPriceHistory(ph *iex.PriceHistory) error {
 
 // InsertDividendHistory inserts a stock's historical dividends into the dividends table
 func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
-	sql := `INSERT INTO dividends (
-		secid,
-		decdate,
-		exdate,
-		recdate,
-		paydate,
-		amount,
-		flag,
-		currency,
-		frequency,
-		description
-		)
+	sql := `INSERT INTO dividends
+		(secid, decdate, exdate, recdate, paydate, amount, flag, currency, frequency, description)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 
 	// Do not insert if there's no dividend history
@@ -175,12 +165,12 @@ func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
 			d.DecDate,
 			d.ExDate,
 			d.RecDate,
-			newNullString(d.PayDate),
-			newNullString(d.Amount),
-			newNullString(d.Flag),
-			newNullString(d.Currency),
-			newNullString(d.Frequency),
-			newNullString(d.Description),
+			nullString(d.PayDate),
+			nullString(d.Amount),
+			nullString(d.Flag),
+			nullString(d.Currency),
+			nullString(d.Frequency),
+			nullString(d.Description),
 		)
 		if err != nil {
 			return err
@@ -227,7 +217,7 @@ func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
 			s.Ratio,
 			s.ToFactor,
 			s.FromFactor,
-			newNullString(s.Description),
+			nullString(s.Description),
 		)
 		if err != nil {
 			return err
@@ -242,7 +232,7 @@ func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
 	return nil
 }
 
-func newNullString(s string) sql.NullString {
+func nullString(s string) sql.NullString {
 	if len(s) == 0 {
 		return sql.NullString{}
 	}

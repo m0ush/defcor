@@ -53,15 +53,19 @@ func (a *APIConnection) AllStocks(ctx context.Context) ([]Stock, error) {
 		return nil, err
 	}
 	request.URL.RawQuery = qparams.Encode()
+
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	log.Println(resp.Status)
+
 	var stks []Stock
 	if err := json.NewDecoder(resp.Body).Decode(&stks); err != nil {
 		return nil, err
 	}
+
 	// My Custom Filter
 	re := regexp.MustCompile(`cs|ad`)
 	var fstks []Stock
@@ -93,14 +97,18 @@ func (a *APIConnection) Prices(ctx context.Context, symbol, lookback string) (*P
 		return nil, err
 	}
 	defer resp.Body.Close()
+	log.Println(resp.Status, symbol)
+
 	var prices []Prices
 	if err := json.NewDecoder(resp.Body).Decode(&prices); err != nil {
 		return nil, err
 	}
+
 	priceHist := PriceHistory{
 		Symbol: symbol,
 		Prices: prices,
 	}
+
 	return &priceHist, nil
 }
 
@@ -118,19 +126,24 @@ func (a *APIConnection) Dividends(ctx context.Context, symbol, lookback string) 
 		return nil, err
 	}
 	request.URL.RawQuery = qparams.Encode()
+
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	log.Println(resp.Status, symbol)
+
 	var dividends []Dividend
 	if err := json.NewDecoder(resp.Body).Decode(&dividends); err != nil {
 		return nil, err
 	}
+
 	divHist := DividendHistory{
 		Symbol:    symbol,
 		Dividends: dividends,
 	}
+
 	return &divHist, nil
 }
 
@@ -148,19 +161,24 @@ func (a *APIConnection) Splits(ctx context.Context, symbol, lookback string) (*S
 		return nil, err
 	}
 	request.URL.RawQuery = qparams.Encode()
+
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	log.Println(resp.Status, symbol)
+
 	var splits []Split
 	if err := json.NewDecoder(resp.Body).Decode(&splits); err != nil {
 		return nil, err
 	}
+
 	splitHist := SplitHistory{
 		Symbol: symbol,
 		Splits: splits,
 	}
+
 	return &splitHist, nil
 }
 
