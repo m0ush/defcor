@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"defcor/iex"
+	"fmt"
+	"log"
 	"os"
 
 	"github.com/jackc/pgx/v4"
 )
 
-// Conn type stores a postgres database connectino
+// Conn type stores a postgres database connection
 type Conn struct {
 	c *pgx.Conn
 }
@@ -54,6 +56,18 @@ func (c *Conn) InsertStock(s iex.Stock) (int, error) {
 	return secid, nil
 }
 
+// InsertStocks adds a slice of stocks into the stocks database
+func (c *Conn) InsertStocks(stks []iex.Stock) error {
+	for _, stk := range stks {
+		secid, err := c.InsertStock(stk)
+		if err != nil {
+			return err
+		}
+		log.Printf("secid: %d(%s, %s)", secid, stk.Symbol, stk.Name)
+	}
+	return nil
+}
+
 // Symbols returns a list of all symbols in the stocks table
 func (c *Conn) Symbols() ([]string, error) {
 	sql := `SELECT symbol FROM stocks`
@@ -75,6 +89,29 @@ func (c *Conn) Symbols() ([]string, error) {
 		return nil, err
 	}
 	return syms, nil
+}
+
+// Stocks returns the entire stock db
+func (c *Conn) Stocks() ([]iex.Stock, error) {
+	sql := `SELECT * FROM stocks`
+	rows, err := c.c.Query(context.Background(), sql)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stks []iex.Stock
+	for rows.Next() {
+		var stk iex.Stock
+		if err := rows.Scan(&stk); err != nil {
+			return nil, err
+		}
+		stks = append(stks, stk)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return stks, nil
 }
 
 // FindSecurityID grabs the secid from the stocks table
@@ -124,7 +161,7 @@ func (c *Conn) InsertPriceHistory(ph *iex.PriceHistory) error {
 			p.Avolume,
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error on insert %v", p)
 		}
 	}
 
@@ -132,7 +169,7 @@ func (c *Conn) InsertPriceHistory(ph *iex.PriceHistory) error {
 	if err != nil {
 		return err
 	}
-
+	log.Printf("%s insert prices - last: %v\n", ph.Symbol, ph.Prices[0])
 	return nil
 }
 
@@ -173,7 +210,7 @@ func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
 			nullString(d.Description),
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error on insert %v", d)
 		}
 	}
 
@@ -181,7 +218,7 @@ func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
 	if err != nil {
 		return err
 	}
-
+	log.Printf("%s insert div - last: %v\n", dh.Symbol, dh.Dividends[0])
 	return nil
 }
 
@@ -220,7 +257,7 @@ func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
 			nullString(s.Description),
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error on insert %v", s)
 		}
 	}
 
@@ -228,7 +265,7 @@ func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
 	if err != nil {
 		return err
 	}
-
+	log.Printf("%s insert split - last: %v\n", sh.Symbol, sh.Splits[0])
 	return nil
 }
 

@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
-	"defcor/db"
-	"defcor/iex"
+	"defcor/app"
 	"log"
 	"os"
 )
@@ -14,61 +12,32 @@ func main() {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Lmicroseconds | log.LUTC)
 
-	api := iex.NewAPIConnection()
-
-	db, err := db.CreateConn()
+	myapp, err := app.StartApplication()
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	defer myapp.End()
 
-	ctx := context.Background()
-
-	stocks, err := api.AllStocks(ctx)
-	if err != nil {
+	// symbs, err := myapp.DB.Symbols()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// rest := restOfStocks("AAT", symbs)
+	// if err := myapp.Seed(rest, lookback); err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println(rest)
+	if err := myapp.CompleteDividends("AAT", "5y"); err != nil {
 		panic(err)
 	}
+}
 
-	for _, stock := range stocks {
-		log.Printf("Tracking: %s %s\n", stock.Symbol, stock.Name)
-		_, err := db.InsertStock(stock)
-		if err != nil {
-			panic(err)
+func restOfStocks(element string, data []string) []string {
+	var x int
+	for k, v := range data {
+		if v == element {
+			x = k
 		}
 	}
-
-	symbols, err := db.Symbols()
-	if err != nil {
-		panic(err)
-	}
-
-	for _, symb := range symbols {
-		sPrices, err := api.Prices(ctx, symb, lookback)
-		if err != nil {
-			panic(err)
-		}
-		log.Printf("Last Price: %s %v\n", sPrices.Symbol, sPrices.Prices[0])
-		if err := db.InsertPriceHistory(sPrices); err != nil {
-			panic(err)
-		}
-
-		sDivs, err := api.Dividends(ctx, symb, lookback)
-		if err != nil {
-			panic(err)
-		}
-		log.Printf("Last Dividend: %s %v\n", sDivs.Symbol, sDivs.Dividends[0])
-		if err := db.InsertDividendHistory(sDivs); err != nil {
-			panic(err)
-		}
-
-		sSplits, err := api.Splits(ctx, symb, lookback)
-		if err != nil {
-			panic(err)
-		}
-		log.Printf("Last Split: %s %v\n", sSplits.Symbol, sSplits.Splits[0])
-		if err := db.InsertSplitHistory(sSplits); err != nil {
-			panic(err)
-		}
-	}
-	log.Println("Done")
+	return data[x+1:]
 }

@@ -25,7 +25,7 @@ type APIConnection struct {
 // NewAPIConnection creates a http client with personal api key
 func NewAPIConnection() *APIConnection {
 	return &APIConnection{
-		rateLimiter: rate.NewLimiter(Per(50, time.Second), 1),
+		rateLimiter: rate.NewLimiter(Per(1, time.Second), 1),
 		baseURL: url.URL{
 			Scheme: "https",
 			Host:   "cloud.iexapis.com",
@@ -59,14 +59,13 @@ func (a *APIConnection) AllStocks(ctx context.Context) ([]Stock, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	log.Println(resp.Status)
 
 	var stks []Stock
 	if err := json.NewDecoder(resp.Body).Decode(&stks); err != nil {
 		return nil, err
 	}
 
-	// My Custom Filter
+	// My Custom Filter: Possibly make this a functional option
 	re := regexp.MustCompile(`cs|ad`)
 	var fstks []Stock
 	for _, s := range stks {
@@ -97,7 +96,6 @@ func (a *APIConnection) Prices(ctx context.Context, symbol, lookback string) (*P
 		return nil, err
 	}
 	defer resp.Body.Close()
-	log.Println(resp.Status, symbol)
 
 	var prices []Prices
 	if err := json.NewDecoder(resp.Body).Decode(&prices); err != nil {
@@ -132,7 +130,6 @@ func (a *APIConnection) Dividends(ctx context.Context, symbol, lookback string) 
 		return nil, err
 	}
 	defer resp.Body.Close()
-	log.Println(resp.Status, symbol)
 
 	var dividends []Dividend
 	if err := json.NewDecoder(resp.Body).Decode(&dividends); err != nil {
@@ -167,7 +164,6 @@ func (a *APIConnection) Splits(ctx context.Context, symbol, lookback string) (*S
 		return nil, err
 	}
 	defer resp.Body.Close()
-	log.Println(resp.Status, symbol)
 
 	var splits []Split
 	if err := json.NewDecoder(resp.Body).Decode(&splits); err != nil {
