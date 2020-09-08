@@ -199,7 +199,7 @@ func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
 	for _, d := range dh.Dividends {
 		_, err = tx.Exec(context.Background(), sql,
 			secid,
-			d.DecDate,
+			nullString(d.DecDate),
 			d.ExDate,
 			d.RecDate,
 			nullString(d.PayDate),
