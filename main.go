@@ -1,33 +1,48 @@
 package main
 
 import (
-	"defcor/app"
+	"defcor/db"
+	"defcor/iex"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 )
 
-const lookback = "5y"
+// const lookback = "5y"
 
 func main() {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Lmicroseconds | log.LUTC)
 
-	myapp, err := app.StartApplication()
+	f, err := os.Open("tester.json")
 	if err != nil {
 		panic(err)
 	}
-	defer myapp.End()
+	defer f.Close()
 
-	// symbs, err := myapp.DB.Symbols()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// rest := restOfStocks("AAT", symbs)
-	// if err := myapp.Seed(rest, lookback); err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println(rest)
-	if err := myapp.CompleteDividends("AAT", "5y"); err != nil {
+	bytedata, err := ioutil.ReadAll(f)
+	if err != nil {
+		panic(err)
+	}
+
+	var ds []iex.Dividend
+	if err := json.Unmarshal(bytedata, &ds); err != nil {
+		panic(err)
+	}
+	for _, d := range ds {
+		fmt.Println(d)
+	}
+	conn, err := db.CreateConn()
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+	if err := conn.TestDivInsert(233, ds); err != nil {
+		panic(err)
+	}
+	if err := conn.TestDivDeletes(233); err != nil {
 		panic(err)
 	}
 }

@@ -1,5 +1,26 @@
 package iex
 
+import (
+	"database/sql"
+	"encoding/json"
+)
+
+// NullString mirrors a sql.NullString
+type NullString struct{ sql.NullString }
+
+// UnmarshalJSON checks to see if a value is either null or empty
+func (ns *NullString) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" || len(data) == 2 {
+		ns.Valid = false
+		return nil
+	}
+	if err := json.Unmarshal(data, &ns.String); err != nil {
+		return err
+	}
+	ns.Valid = true
+	return nil
+}
+
 // Stock represents a single Stock
 type Stock struct {
 	Symbol   string `json:"symbol"`
@@ -8,7 +29,7 @@ type Stock struct {
 	Type     string `json:"type"`
 	IexID    string `json:"iexId"`
 	Region   string `json:"region"`
-	Currency string `json:"currency"`
+	Curr     string `json:"currency"`
 	IsActive bool   `json:"isEnabled"`
 	Figi     string `json:"figi"`
 	Cik      string `json:"cik"`
@@ -37,15 +58,15 @@ type PriceHistory struct {
 
 // Dividend type models a dividend event
 type Dividend struct {
-	DecDate     string `json:"declaredDate"`
-	ExDate      string `json:"exDate"`
-	RecDate     string `json:"recordDate"`
-	PayDate     string `json:"paymentDate"`
-	Amount      string `json:"amount"`
-	Flag        string `json:"flag"`
-	Currency    string `json:"currency"`
-	Description string `json:"description"`
-	Frequency   string `json:"frequency"`
+	DecDate NullString `json:"declaredDate"`
+	ExDate  string     `json:"exDate"`
+	RecDate string     `json:"recordDate"`
+	PayDate NullString `json:"paymentDate"`
+	Amount  NullString `json:"amount"`
+	Flag    NullString `json:"flag"`
+	Curr    NullString `json:"currency"`
+	Desc    NullString `json:"description"`
+	Freq    NullString `json:"frequency"`
 }
 
 // DividendHistory models dividends for a security
@@ -61,12 +82,12 @@ func (dh DividendHistory) IsEmpty() bool {
 
 // Split type models a security split event
 type Split struct {
-	DecDate     string  `json:"declaredDate"`
-	ExDate      string  `json:"exDate"`
-	Ratio       float64 `json:"ratio"`
-	ToFactor    float64 `json:"toFactor"`
-	FromFactor  float64 `json:"fromFactor"`
-	Description string  `json:"description"`
+	DecDate    NullString `json:"declaredDate"`
+	ExDate     string     `json:"exDate"`
+	Ratio      float64    `json:"ratio"`
+	ToFactor   float64    `json:"toFactor"`
+	FromFactor float64    `json:"fromFactor"`
+	Desc       NullString `json:"description"`
 }
 
 // SplitHistory models splits for a security

@@ -40,16 +40,7 @@ func (c *Conn) InsertStock(s iex.Stock) (int, error) {
 
 	var secid int
 	if err := c.c.QueryRow(context.Background(), sql,
-		s.Symbol,
-		s.Name,
-		s.Date,
-		s.IsActive,
-		s.Type,
-		s.IexID,
-		s.Figi,
-		s.Currency,
-		s.Region,
-		s.Cik,
+		s.Symbol, s.Name, s.Date, s.IsActive, s.Type, s.IexID, s.Figi, s.Curr, s.Region, s.Cik,
 	).Scan(&secid); err != nil {
 		return -1, err // -1 is an invalid secid
 	}
@@ -132,39 +123,24 @@ func (c *Conn) InsertPriceHistory(ph *iex.PriceHistory) error {
 		date, secid, uopen, uclose, uhigh, ulow, uvolume, aopen, aclose, ahigh, alow, avolume
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
-
 	secid, err := c.FindSecurityID(ph.Symbol)
 	if err != nil {
 		return err
 	}
-
 	tx, err := c.c.Begin(context.Background())
 	if err != nil {
 		return err
 	}
 	// no-op on successful tx commit
 	defer tx.Rollback(context.Background())
-
 	for _, p := range ph.Prices {
 		_, err = tx.Exec(context.Background(), sql,
-			p.Date,
-			secid,
-			p.Uopen,
-			p.Uclose,
-			p.Uhigh,
-			p.Ulow,
-			p.Uvolume,
-			p.Aopen,
-			p.Aclose,
-			p.Ahigh,
-			p.Alow,
-			p.Avolume,
+			p.Date, secid, p.Uopen, p.Uclose, p.Uhigh, p.Ulow, p.Uvolume, p.Aopen, p.Aclose, p.Ahigh, p.Alow, p.Avolume,
 		)
 		if err != nil {
 			return fmt.Errorf("Error on insert %v", p)
 		}
 	}
-
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
@@ -178,42 +154,28 @@ func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
 	sql := `INSERT INTO dividends
 		(secid, decdate, exdate, recdate, paydate, amount, flag, currency, frequency, description)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-
 	// Do not insert if there's no dividend history
 	if dh.IsEmpty() {
 		return nil
 	}
-
 	secid, err := c.FindSecurityID(dh.Symbol)
 	if err != nil {
 		return err
 	}
-
 	tx, err := c.c.Begin(context.Background())
 	if err != nil {
 		return err
 	}
 	// no-op on successful tx commit
 	defer tx.Rollback(context.Background())
-
 	for _, d := range dh.Dividends {
 		_, err = tx.Exec(context.Background(), sql,
-			secid,
-			nullString(d.DecDate),
-			d.ExDate,
-			d.RecDate,
-			nullString(d.PayDate),
-			nullString(d.Amount),
-			nullString(d.Flag),
-			nullString(d.Currency),
-			nullString(d.Frequency),
-			nullString(d.Description),
+			secid, d.DecDate, d.ExDate, d.RecDate, d.PayDate, d.Amount, d.Flag, d.Curr, d.Freq, d.Desc,
 		)
 		if err != nil {
 			return fmt.Errorf("Error on insert %v", d)
 		}
 	}
-
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
@@ -228,39 +190,28 @@ func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
 		secid, decdate, exdate, ratio, tofactor, fromfactor, description
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)`
-
 	// Don't insert if there's no split history
 	if sh.IsEmpty() {
 		return nil
 	}
-
 	secid, err := c.FindSecurityID(sh.Symbol)
 	if err != nil {
 		return err
 	}
-
 	tx, err := c.c.Begin(context.Background())
 	if err != nil {
 		return err
 	}
 	// no-op on successful tx commit
 	defer tx.Rollback(context.Background())
-
 	for _, s := range sh.Splits {
 		_, err = tx.Exec(context.Background(), sql,
-			secid,
-			s.DecDate,
-			s.ExDate,
-			s.Ratio,
-			s.ToFactor,
-			s.FromFactor,
-			nullString(s.Description),
+			secid, s.DecDate, s.ExDate, s.Ratio, s.ToFactor, s.FromFactor, s.Desc,
 		)
 		if err != nil {
 			return fmt.Errorf("Error on insert %v", s)
 		}
 	}
-
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
@@ -277,4 +228,36 @@ func nullString(s string) sql.NullString {
 		String: s,
 		Valid:  true,
 	}
+}
+
+// TestDivInsert tests to make sure dividends are inserted well
+func (c *Conn) TestDivInsert(i int, ds []iex.Dividend) error {
+	sql := `INSERT INTO dividends
+		(secid, decdate, exdate, recdate, paydate, amount, flag, currency, frequency, description)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	tx, err := c.c.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(context.Background())
+	for _, d := range ds {
+		_, err = tx.Exec(context.Background(), sql,
+			i, d.DecDate, d.ExDate, d.RecDate, d.PayDate, d.Amount, d.Flag, d.Curr, d.Freq, d.Desc,
+		)
+		if err != nil {
+			return fmt.Errorf("Error on insert %v", d)
+		}
+	}
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// TestDivDeletes deletes a dividend record where secid = i
+func (c *Conn) TestDivDeletes(i int) error {
+	sql := `DELETE FROM dividends WHERE secid=$1`
+	_, err := c.c.Exec(context.Background(), sql, i)
+	return err
 }

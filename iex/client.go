@@ -3,13 +3,11 @@ package iex
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"regexp"
-	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -101,12 +99,10 @@ func (a *APIConnection) Prices(ctx context.Context, symbol, lookback string) (*P
 	if err := json.NewDecoder(resp.Body).Decode(&prices); err != nil {
 		return nil, err
 	}
-
 	priceHist := PriceHistory{
 		Symbol: symbol,
 		Prices: prices,
 	}
-
 	return &priceHist, nil
 }
 
@@ -135,12 +131,10 @@ func (a *APIConnection) Dividends(ctx context.Context, symbol, lookback string) 
 	if err := json.NewDecoder(resp.Body).Decode(&dividends); err != nil {
 		return nil, err
 	}
-
 	divHist := DividendHistory{
 		Symbol:    symbol,
 		Dividends: dividends,
 	}
-
 	return &divHist, nil
 }
 
@@ -169,57 +163,9 @@ func (a *APIConnection) Splits(ctx context.Context, symbol, lookback string) (*S
 	if err := json.NewDecoder(resp.Body).Decode(&splits); err != nil {
 		return nil, err
 	}
-
 	splitHist := SplitHistory{
 		Symbol: symbol,
 		Splits: splits,
 	}
-
 	return &splitHist, nil
-}
-
-// AllPrices grabs historical pricing for all stocks
-func (a *APIConnection) AllPrices(ctx context.Context, symbols []string, lookback string) error {
-	for _, symb := range symbols {
-		ph, err := a.Prices(context.Background(), symb, lookback)
-		if err != nil {
-			return err
-		}
-		log.Printf("Prices: %s %v\n", ph.Symbol, ph.Prices)
-	}
-	return nil
-}
-
-// AllDividends returns dividend history for each symbol
-func (a *APIConnection) AllDividends(ctx context.Context, symbols []string, lookback string) {
-	var wg sync.WaitGroup
-	wg.Add(len(symbols))
-	for _, symb := range symbols {
-		go func(symb string) {
-			defer wg.Done()
-			data, err := a.Dividends(context.Background(), symb, lookback)
-			if err != nil {
-				log.Fatal(symb, err)
-			}
-			log.Printf("Dividends: %s %v\n", symb, data)
-		}(symb)
-	}
-	wg.Wait()
-}
-
-// AllSplits returns split history for each symbol
-func (a *APIConnection) AllSplits(ctx context.Context, symbols []string, lookback string) {
-	var wg sync.WaitGroup
-	wg.Add(len(symbols))
-	for _, symb := range symbols {
-		go func(symb string) {
-			defer wg.Done()
-			data, err := a.Splits(context.Background(), symb, lookback)
-			if err != nil {
-				log.Fatal(symb, err)
-			}
-			log.Printf("Splits: %s %v\n", symb, data)
-		}(symb)
-	}
-	wg.Wait()
 }
