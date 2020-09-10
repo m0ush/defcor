@@ -18,7 +18,7 @@ type Conn struct {
 
 // CreateConn creates a postgres connection struct
 func CreateConn() (*Conn, error) {
-	c, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	c, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL_PROD"))
 	if err != nil {
 		return nil, err
 	}

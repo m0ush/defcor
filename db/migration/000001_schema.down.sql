@@ -1,5 +1,8 @@
-drop table if exists dividends;
-drop table if exists splits;
-drop table if exists prices;
-drop table if exists stocks;
-drop extension if exists timescaledb;
+DROP TABLE IF EXISTS dividends;
+DROP TABLE IF EXISTS splits;
+DROP TABLE IF EXISTS prices;
+DROP TABLE IF EXISTS cashflow;
+DROP TABLE IF EXISTS balancesheet;
+DROP TABLE IF EXISTS incomestatement;
+DROP TABLE IF EXISTS stocks;
+DROP EXTENSION IF EXISTS "timescaledb";
