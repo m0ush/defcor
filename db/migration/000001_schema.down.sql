@@ -5,4 +5,4 @@ DROP TABLE IF EXISTS cashflow;
 DROP TABLE IF EXISTS balancesheet;
 DROP TABLE IF EXISTS incomestatement;
 DROP TABLE IF EXISTS stocks;
-DROP EXTENSION IF EXISTS "timescaledb";
+DROP EXTENSION IF EXISTS timescaledb;

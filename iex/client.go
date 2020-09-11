@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"regexp"
 	"time"
@@ -21,15 +20,15 @@ type APIConnection struct {
 }
 
 // NewAPIConnection creates a http client with personal api key
-func NewAPIConnection() *APIConnection {
+func NewAPIConnection(key string) *APIConnection {
 	return &APIConnection{
-		rateLimiter: rate.NewLimiter(Per(1, time.Second), 1),
+		rateLimiter: rate.NewLimiter(Per(100, time.Second), 1),
 		baseURL: url.URL{
 			Scheme: "https",
-			Host:   "cloud.iexapis.com",
+			Host:   "sandbox.iexapis.com",
 			Path:   "stable/",
 		},
-		apiKey: os.Getenv("IEXCLOUD_SECRET"),
+		apiKey: key,
 	}
 }
 

@@ -1,48 +1,37 @@
 package main
 
 import (
-	"defcor/db"
+	"defcor/app"
 	"defcor/iex"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 )
 
-// const lookback = "5y"
+const lookback = "5y"
+
+var whichDB = os.Getenv("DATABASE_URL_TEST")
+var whichKey = os.Getenv("IEXCLOUD_TEST")
 
 func main() {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Lmicroseconds | log.LUTC)
 
-	f, err := os.Open("tester.json")
+	myapp, err := app.StartApplication(whichKey, whichDB)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
-
-	bytedata, err := ioutil.ReadAll(f)
+	defer myapp.End()
+	// if err := myapp.RefreshStocks(); err != nil {
+	// 	panic(err)
+	// }
+	symbols, err := myapp.DB.Symbols()
 	if err != nil {
 		panic(err)
 	}
-
-	var ds []iex.Dividend
-	if err := json.Unmarshal(bytedata, &ds); err != nil {
-		panic(err)
-	}
-	for _, d := range ds {
-		fmt.Println(d)
-	}
-	conn, err := db.CreateConn()
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
-	if err := conn.TestDivInsert(233, ds); err != nil {
-		panic(err)
-	}
-	if err := conn.TestDivDeletes(233); err != nil {
+	revised := restOfStocks("CCO", symbols)
+	if err := myapp.Seed(revised, lookback); err != nil {
 		panic(err)
 	}
 }
@@ -55,4 +44,21 @@ func restOfStocks(element string, data []string) []string {
 		}
 	}
 	return data[x+1:]
+}
+
+func readtesterfile() ([]iex.Dividend, error) {
+	f, err := os.Open("tester.json")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	bytedata, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	var ds []iex.Dividend
+	if err := json.Unmarshal(bytedata, &ds); err != nil {
+		return nil, err
+	}
+	return ds, nil
 }

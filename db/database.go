@@ -6,7 +6,6 @@ import (
 	"defcor/iex"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/jackc/pgx/v4"
 )
@@ -17,8 +16,8 @@ type Conn struct {
 }
 
 // CreateConn creates a postgres connection struct
-func CreateConn() (*Conn, error) {
-	c, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL_PROD"))
+func CreateConn(dburl string) (*Conn, error) {
+	c, err := pgx.Connect(context.Background(), dburl)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +144,7 @@ func (c *Conn) InsertPriceHistory(ph *iex.PriceHistory) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("%s insert prices - last: %v\n", ph.Symbol, ph.Prices[0])
+	log.Printf("%s prices complete. Last: %v\n", ph.Symbol, ph.Prices[0])
 	return nil
 }
 
@@ -180,7 +179,7 @@ func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("%s insert div - last: %v\n", dh.Symbol, dh.Dividends[0])
+	log.Printf("%s dividends complete. Last: %v\n", dh.Symbol, dh.Dividends[0])
 	return nil
 }
 
@@ -216,7 +215,7 @@ func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("%s insert split - last: %v\n", sh.Symbol, sh.Splits[0])
+	log.Printf("%s splits complete. Last: %v\n", sh.Symbol, sh.Splits[0])
 	return nil
 }
 

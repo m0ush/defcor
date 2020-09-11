@@ -60,7 +60,7 @@ type PriceHistory struct {
 type Dividend struct {
 	DecDate NullString `json:"declaredDate"`
 	ExDate  string     `json:"exDate"`
-	RecDate string     `json:"recordDate"`
+	RecDate NullString `json:"recordDate"`
 	PayDate NullString `json:"paymentDate"`
 	Amount  NullString `json:"amount"`
 	Flag    NullString `json:"flag"`

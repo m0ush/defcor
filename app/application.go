@@ -13,12 +13,12 @@ type Application struct {
 }
 
 // StartApplication creates an app
-func StartApplication() (*Application, error) {
-	conn, err := db.CreateConn()
+func StartApplication(apikey, dburl string) (*Application, error) {
+	conn, err := db.CreateConn(dburl)
 	if err != nil {
 		return nil, err
 	}
-	api := iex.NewAPIConnection()
+	api := iex.NewAPIConnection(apikey)
 	return &Application{
 		DB:  conn,
 		api: api,
@@ -72,28 +72,31 @@ func (app *Application) Seed(symbols []string, lookback string) error {
 		if err := app.CompletePrices(symb, lookback); err != nil {
 			return err
 		}
-		if err := app.CompleteDividends(symb, lookback); err != nil {
+		if err := app.CompleteSplits(symb, lookback); err != nil {
 			return err
 		}
-		if err := app.CompleteSplits(symb, lookback); err != nil {
+		if err := app.CompleteDividends(symb, lookback); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// NewStocks add only new securities to the stocks table
-func (app *Application) NewStocks() ([]iex.Stock, error) {
+// RefreshStocks add only new securities to the stocks table
+func (app *Application) RefreshStocks() error {
 	exists, err := app.DB.Stocks()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	stocks, err := app.api.AllStocks(context.Background())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	newStocks := setDifference(exists, stocks)
-	return newStocks, nil
+	if err := app.DB.InsertStocks(newStocks); err != nil {
+		return err
+	}
+	return nil
 }
 
 func setDifference(existing, recent []iex.Stock) []iex.Stock {
