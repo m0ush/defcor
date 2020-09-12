@@ -14,7 +14,7 @@ var environment = app.Environment{
 	Host:     "sandbox.iexapis.com",
 	APIKey:   os.Getenv("IEXCLOUD_TEST"),
 	Lookback: "5y",
-	Duration: 75 * time.Millisecond,
+	Duration: 63 * time.Millisecond,
 	DbURL:    os.Getenv("DATABASE_URL_TEST"),
 }
 
@@ -27,15 +27,15 @@ func main() {
 		panic(err)
 	}
 	defer myapp.End()
-	// if err := myapp.RefreshStocks(); err != nil {
-	// 	panic(err)
-	// }
+	if err := myapp.RefreshStocks(); err != nil {
+		panic(err)
+	}
 	symbols, err := myapp.DB.Symbols()
 	if err != nil {
 		panic(err)
 	}
-	revised := restOfStocks("MCRI", symbols)
-	if err := myapp.Seed(revised); err != nil {
+	// revised := restOfStocks("AAPL", symbols)
+	if err := myapp.Seed(symbols); err != nil {
 		panic(err)
 	}
 }

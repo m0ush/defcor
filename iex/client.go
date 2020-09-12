@@ -96,7 +96,7 @@ func (a *APIConnection) Prices(ctx context.Context, symbol string) (*PriceHistor
 		return nil, err
 	}
 	defer resp.Body.Close()
-	log.Printf("%s price status: %d\n", symbol, resp.StatusCode)
+	log.Printf("price status: %s\n", resp.Status)
 
 	var ph PriceHistory
 	ph.Symbol = symbol
@@ -126,7 +126,7 @@ func (a *APIConnection) Dividends(ctx context.Context, symbol string) (*Dividend
 		return nil, err
 	}
 	defer resp.Body.Close()
-	log.Printf("%s dividend status: %d\n", symbol, resp.StatusCode)
+	log.Printf("dividend status: %s\n", resp.Status)
 
 	var dh DividendHistory
 	dh.Symbol = symbol
@@ -157,7 +157,7 @@ func (a *APIConnection) Splits(ctx context.Context, symbol string) (*SplitHistor
 	}
 	defer resp.Body.Close()
 
-	log.Printf("%s split status: %d\n", symbol, resp.StatusCode)
+	log.Printf("split status: %s\n", resp.Status)
 	var sh SplitHistory
 	sh.Symbol = symbol
 	if err := json.NewDecoder(resp.Body).Decode(&sh.Splits); err != nil {

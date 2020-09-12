@@ -14,19 +14,18 @@ CREATE TABLE IF NOT EXISTS stocks (
     cik integer
 );
 
--- Likely need to partition verticially by unadj/adj
 CREATE TABLE IF NOT EXISTS prices (
 	date date,
 	secid integer REFERENCES stocks (secid),
-	uopen numeric(10, 4),
-	uclose numeric(10, 4),
-	uhigh numeric(10, 4),
-	ulow numeric(10, 4),
+	uopen numeric(8, 2),
+	uclose numeric(8, 2),
+	uhigh numeric(8, 2),
+	ulow numeric(8, 2),
 	uvolume integer,
-	aopen numeric(10, 4),
-	aclose numeric(10, 4),
-	ahigh numeric(10, 4),
-	alow numeric(10, 4),
+	aopen numeric(8, 2),
+	aclose numeric(8, 2),
+	ahigh numeric(8, 2),
+	alow numeric(8, 2),
 	avolume integer,
 	PRIMARY KEY (date, secid)
 );

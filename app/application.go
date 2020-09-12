@@ -80,16 +80,19 @@ func (app *Application) CompleteSplits(symbol string) error {
 // Seed populates the application database
 func (app *Application) Seed(symbols []string) error {
 	for _, symb := range symbols {
-		log.Printf("Working on %s...\n", symb)
+		log.Printf("working on %s...\n", symb)
 		if err := app.CompletePrices(symb); err != nil {
 			return err
 		}
-		if err := app.CompleteSplits(symb); err != nil {
-			return err
-		}
+		log.Println("prices complete")
 		if err := app.CompleteDividends(symb); err != nil {
 			return err
 		}
+		log.Println("dividends complete")
+		if err := app.CompleteSplits(symb); err != nil {
+			return err
+		}
+		log.Println("splits complete")
 	}
 	log.Println("Done!")
 	return nil

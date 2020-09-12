@@ -139,25 +139,27 @@ func (c *Conn) InsertPriceHistory(ph *iex.PriceHistory) error {
 		if err != nil {
 			return fmt.Errorf("insertion error: %s(price:%v)", ph.Symbol, p)
 		}
-		log.Printf("%s price: %s c: %v v: %v\n", ph.Symbol, p.Date, p.Aclose, p.Avolume)
+		// log.Printf("%s price: %s c: %v v: %v\n", ph.Symbol, p.Date, p.Aclose, p.Avolume)
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
-	log.Printf("%s prices complete.\n", ph.Symbol)
+	// log.Printf("%s prices complete\n", ph.Symbol)
 	return nil
 }
 
 // InsertDividendHistory inserts a stock's historical dividends into the dividends table
 func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
+	// Do not insert if there's no dividend history
+	if dh.IsEmpty() {
+		// log.Printf("%s no dividends\n", dh.Symbol)
+		return nil
+	}
 	sql := `INSERT INTO dividends
 		(secid, decdate, exdate, recdate, paydate, amount, flag, currency, frequency, description)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-	// Do not insert if there's no dividend history
-	if dh.IsEmpty() {
-		return nil
-	}
+
 	secid, err := c.FindSecurityID(dh.Symbol)
 	if err != nil {
 		return err
@@ -175,26 +177,28 @@ func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
 		if err != nil {
 			return fmt.Errorf("insertion error: %s(dividend:%v)", dh.Symbol, d)
 		}
-		log.Printf("%s dividend: %s %s\n", dh.Symbol, d.ExDate, d.Amount)
+		// log.Printf("%s dividend: %s %s\n", dh.Symbol, d.ExDate, d.Amount)
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
-	log.Printf("%s dividends complete.\n", dh.Symbol)
+	// log.Printf("%s dividends complete\n", dh.Symbol)
 	return nil
 }
 
 // InsertSplitHistory inserts a stock's historical stock splits into the splits table
 func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
+	// Don't insert if there's no split history
+	if sh.IsEmpty() {
+		// log.Printf("%s no splits\n", sh.Symbol)
+		return nil
+	}
 	sql := `INSERT INTO splits(
 		secid, decdate, exdate, ratio, tofactor, fromfactor, description
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	// Don't insert if there's no split history
-	if sh.IsEmpty() {
-		return nil
-	}
+
 	secid, err := c.FindSecurityID(sh.Symbol)
 	if err != nil {
 		return err
@@ -212,13 +216,13 @@ func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
 		if err != nil {
 			return fmt.Errorf("insertion error: %s(split:%v)", sh.Symbol, s)
 		}
-		log.Printf("%s split: %s %v-to-%v\n", sh.Symbol, s.ExDate, s.FromFactor, s.ToFactor)
+		// log.Printf("%s split: %s %v-to-%v\n", sh.Symbol, s.ExDate, s.FromFactor, s.ToFactor)
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
-	log.Printf("%s splits complete.\n", sh.Symbol)
+	// log.Printf("%s splits complete\n", sh.Symbol)
 	return nil
 }
 
