@@ -4,6 +4,8 @@ import (
 	"context"
 	"defcor/db"
 	"defcor/iex"
+	"log"
+	"time"
 )
 
 // Application combines db with api
@@ -12,13 +14,22 @@ type Application struct {
 	api *iex.APIConnection
 }
 
+// Environment outlines the environment
+type Environment struct {
+	Host     string
+	APIKey   string
+	Lookback string
+	Duration time.Duration
+	DbURL    string
+}
+
 // StartApplication creates an app
-func StartApplication(apikey, dburl string) (*Application, error) {
-	conn, err := db.CreateConn(dburl)
+func StartApplication(env Environment) (*Application, error) {
+	conn, err := db.CreateConn(env.DbURL)
 	if err != nil {
 		return nil, err
 	}
-	api := iex.NewAPIConnection(apikey)
+	api := iex.NewAPIConnection(env.Host, env.APIKey, env.Lookback, env.Duration)
 	return &Application{
 		DB:  conn,
 		api: api,
@@ -31,8 +42,8 @@ func (app *Application) End() error {
 }
 
 // CompletePrices fetches prices and inserts them into the database
-func (app *Application) CompletePrices(symbol, lookback string) error {
-	securityPrices, err := app.api.Prices(context.Background(), symbol, lookback)
+func (app *Application) CompletePrices(symbol string) error {
+	securityPrices, err := app.api.Prices(context.Background(), symbol)
 	if err != nil {
 		return err
 	}
@@ -43,8 +54,8 @@ func (app *Application) CompletePrices(symbol, lookback string) error {
 }
 
 // CompleteDividends fetches dividends and inserts them into the database
-func (app *Application) CompleteDividends(symbol, lookback string) error {
-	securityDivs, err := app.api.Dividends(context.Background(), symbol, lookback)
+func (app *Application) CompleteDividends(symbol string) error {
+	securityDivs, err := app.api.Dividends(context.Background(), symbol)
 	if err != nil {
 		return err
 	}
@@ -55,8 +66,8 @@ func (app *Application) CompleteDividends(symbol, lookback string) error {
 }
 
 // CompleteSplits fetches splits and inserts them into the database
-func (app *Application) CompleteSplits(symbol, lookback string) error {
-	securitySplits, err := app.api.Splits(context.Background(), symbol, lookback)
+func (app *Application) CompleteSplits(symbol string) error {
+	securitySplits, err := app.api.Splits(context.Background(), symbol)
 	if err != nil {
 		return err
 	}
@@ -67,18 +78,20 @@ func (app *Application) CompleteSplits(symbol, lookback string) error {
 }
 
 // Seed populates the application database
-func (app *Application) Seed(symbols []string, lookback string) error {
+func (app *Application) Seed(symbols []string) error {
 	for _, symb := range symbols {
-		if err := app.CompletePrices(symb, lookback); err != nil {
+		log.Printf("Working on %s...\n", symb)
+		if err := app.CompletePrices(symb); err != nil {
 			return err
 		}
-		if err := app.CompleteSplits(symb, lookback); err != nil {
+		if err := app.CompleteSplits(symb); err != nil {
 			return err
 		}
-		if err := app.CompleteDividends(symb, lookback); err != nil {
+		if err := app.CompleteDividends(symb); err != nil {
 			return err
 		}
 	}
+	log.Println("Done!")
 	return nil
 }
 

@@ -58,15 +58,15 @@ type PriceHistory struct {
 
 // Dividend type models a dividend event
 type Dividend struct {
-	DecDate NullString `json:"declaredDate"`
-	ExDate  string     `json:"exDate"`
-	RecDate NullString `json:"recordDate"`
-	PayDate NullString `json:"paymentDate"`
-	Amount  NullString `json:"amount"`
-	Flag    NullString `json:"flag"`
-	Curr    NullString `json:"currency"`
-	Desc    NullString `json:"description"`
-	Freq    NullString `json:"frequency"`
+	DecDate NullString  `json:"declaredDate"`
+	ExDate  string      `json:"exDate"`
+	RecDate NullString  `json:"recordDate"`
+	PayDate NullString  `json:"paymentDate"`
+	Amount  json.Number `json:"amount"`
+	Flag    NullString  `json:"flag"`
+	Curr    NullString  `json:"currency"`
+	Desc    NullString  `json:"description"`
+	Freq    NullString  `json:"frequency"`
 }
 
 // DividendHistory models dividends for a security

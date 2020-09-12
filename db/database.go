@@ -137,14 +137,15 @@ func (c *Conn) InsertPriceHistory(ph *iex.PriceHistory) error {
 			p.Date, secid, p.Uopen, p.Uclose, p.Uhigh, p.Ulow, p.Uvolume, p.Aopen, p.Aclose, p.Ahigh, p.Alow, p.Avolume,
 		)
 		if err != nil {
-			return fmt.Errorf("Error on insert %v", p)
+			return fmt.Errorf("insertion error: %s(price:%v)", ph.Symbol, p)
 		}
+		log.Printf("%s price: %s c: %v v: %v\n", ph.Symbol, p.Date, p.Aclose, p.Avolume)
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
-	log.Printf("%s prices complete. Last: %v\n", ph.Symbol, ph.Prices[0])
+	log.Printf("%s prices complete.\n", ph.Symbol)
 	return nil
 }
 
@@ -172,14 +173,15 @@ func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
 			secid, d.DecDate, d.ExDate, d.RecDate, d.PayDate, d.Amount, d.Flag, d.Curr, d.Freq, d.Desc,
 		)
 		if err != nil {
-			return fmt.Errorf("Error on insert %v", d)
+			return fmt.Errorf("insertion error: %s(dividend:%v)", dh.Symbol, d)
 		}
+		log.Printf("%s dividend: %s %s\n", dh.Symbol, d.ExDate, d.Amount)
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
-	log.Printf("%s dividends complete. Last: %v\n", dh.Symbol, dh.Dividends[0])
+	log.Printf("%s dividends complete.\n", dh.Symbol)
 	return nil
 }
 
@@ -208,14 +210,15 @@ func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
 			secid, s.DecDate, s.ExDate, s.Ratio, s.ToFactor, s.FromFactor, s.Desc,
 		)
 		if err != nil {
-			return fmt.Errorf("Error on insert %v", s)
+			return fmt.Errorf("insertion error: %s(split:%v)", sh.Symbol, s)
 		}
+		log.Printf("%s split: %s %v-to-%v\n", sh.Symbol, s.ExDate, s.FromFactor, s.ToFactor)
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
-	log.Printf("%s splits complete. Last: %v\n", sh.Symbol, sh.Splits[0])
+	log.Printf("%s splits complete.\n", sh.Symbol)
 	return nil
 }
 

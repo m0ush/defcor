@@ -7,18 +7,22 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 )
 
-const lookback = "5y"
-
-var whichDB = os.Getenv("DATABASE_URL_TEST")
-var whichKey = os.Getenv("IEXCLOUD_TEST")
+var environment = app.Environment{
+	Host:     "sandbox.iexapis.com",
+	APIKey:   os.Getenv("IEXCLOUD_TEST"),
+	Lookback: "5y",
+	Duration: 75 * time.Millisecond,
+	DbURL:    os.Getenv("DATABASE_URL_TEST"),
+}
 
 func main() {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Lmicroseconds | log.LUTC)
 
-	myapp, err := app.StartApplication(whichKey, whichDB)
+	myapp, err := app.StartApplication(environment)
 	if err != nil {
 		panic(err)
 	}
@@ -30,8 +34,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	revised := restOfStocks("CCO", symbols)
-	if err := myapp.Seed(revised, lookback); err != nil {
+	revised := restOfStocks("MCRI", symbols)
+	if err := myapp.Seed(revised); err != nil {
 		panic(err)
 	}
 }

@@ -3,6 +3,7 @@ package iex
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -17,18 +18,20 @@ type APIConnection struct {
 	rateLimiter *rate.Limiter
 	baseURL     url.URL
 	apiKey      string
+	lookback    string
 }
 
 // NewAPIConnection creates a http client with personal api key
-func NewAPIConnection(key string) *APIConnection {
+func NewAPIConnection(host, key, lookback string, duration time.Duration) *APIConnection {
 	return &APIConnection{
-		rateLimiter: rate.NewLimiter(Per(100, time.Second), 1),
+		rateLimiter: rate.NewLimiter(Per(1, duration), 1),
 		baseURL: url.URL{
 			Scheme: "https",
-			Host:   "sandbox.iexapis.com",
+			Host:   host,
 			Path:   "stable/",
 		},
-		apiKey: key,
+		apiKey:   key,
+		lookback: lookback,
 	}
 }
 
@@ -75,13 +78,13 @@ func (a *APIConnection) AllStocks(ctx context.Context) ([]Stock, error) {
 }
 
 // Prices returns the historical prices for a stock
-func (a *APIConnection) Prices(ctx context.Context, symbol, lookback string) (*PriceHistory, error) {
+func (a *APIConnection) Prices(ctx context.Context, symbol string) (*PriceHistory, error) {
 	if err := a.rateLimiter.Wait(ctx); err != nil {
 		return nil, err
 	}
 	qparams := make(url.Values)
 	qparams.Set("token", a.apiKey)
-	urlpath := path.Join("stock", symbol, "chart", lookback)
+	urlpath := path.Join("stock", symbol, "chart", a.lookback)
 	endpoint := a.baseURL.ResolveReference(&url.URL{Path: urlpath})
 	request, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
 	if err != nil {
@@ -93,26 +96,24 @@ func (a *APIConnection) Prices(ctx context.Context, symbol, lookback string) (*P
 		return nil, err
 	}
 	defer resp.Body.Close()
+	log.Printf("%s price status: %d\n", symbol, resp.StatusCode)
 
-	var prices []Prices
-	if err := json.NewDecoder(resp.Body).Decode(&prices); err != nil {
+	var ph PriceHistory
+	ph.Symbol = symbol
+	if err := json.NewDecoder(resp.Body).Decode(&ph.Prices); err != nil {
 		return nil, err
 	}
-	priceHist := PriceHistory{
-		Symbol: symbol,
-		Prices: prices,
-	}
-	return &priceHist, nil
+	return &ph, nil
 }
 
 // Dividends returns the historical dividend information for a stock
-func (a *APIConnection) Dividends(ctx context.Context, symbol, lookback string) (*DividendHistory, error) {
+func (a *APIConnection) Dividends(ctx context.Context, symbol string) (*DividendHistory, error) {
 	if err := a.rateLimiter.Wait(ctx); err != nil {
 		return nil, err
 	}
 	qparams := make(url.Values)
 	qparams.Set("token", a.apiKey)
-	urlpath := path.Join("stock", symbol, "dividends", lookback)
+	urlpath := path.Join("stock", symbol, "dividends", a.lookback)
 	endpoint := a.baseURL.ResolveReference(&url.URL{Path: urlpath})
 	request, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
 	if err != nil {
@@ -125,26 +126,24 @@ func (a *APIConnection) Dividends(ctx context.Context, symbol, lookback string) 
 		return nil, err
 	}
 	defer resp.Body.Close()
+	log.Printf("%s dividend status: %d\n", symbol, resp.StatusCode)
 
-	var dividends []Dividend
-	if err := json.NewDecoder(resp.Body).Decode(&dividends); err != nil {
+	var dh DividendHistory
+	dh.Symbol = symbol
+	if err := json.NewDecoder(resp.Body).Decode(&dh.Dividends); err != nil {
 		return nil, err
 	}
-	divHist := DividendHistory{
-		Symbol:    symbol,
-		Dividends: dividends,
-	}
-	return &divHist, nil
+	return &dh, nil
 }
 
 // Splits returns the historical split information for a stock
-func (a *APIConnection) Splits(ctx context.Context, symbol, lookback string) (*SplitHistory, error) {
+func (a *APIConnection) Splits(ctx context.Context, symbol string) (*SplitHistory, error) {
 	if err := a.rateLimiter.Wait(ctx); err != nil {
 		return nil, err
 	}
 	qparams := make(url.Values)
 	qparams.Set("token", a.apiKey)
-	urlpath := path.Join("stock", symbol, "splits", lookback)
+	urlpath := path.Join("stock", symbol, "splits", a.lookback)
 	endpoint := a.baseURL.ResolveReference(&url.URL{Path: urlpath})
 	request, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
 	if err != nil {
@@ -158,13 +157,11 @@ func (a *APIConnection) Splits(ctx context.Context, symbol, lookback string) (*S
 	}
 	defer resp.Body.Close()
 
-	var splits []Split
-	if err := json.NewDecoder(resp.Body).Decode(&splits); err != nil {
+	log.Printf("%s split status: %d\n", symbol, resp.StatusCode)
+	var sh SplitHistory
+	sh.Symbol = symbol
+	if err := json.NewDecoder(resp.Body).Decode(&sh.Splits); err != nil {
 		return nil, err
 	}
-	splitHist := SplitHistory{
-		Symbol: symbol,
-		Splits: splits,
-	}
-	return &splitHist, nil
+	return &sh, nil
 }
