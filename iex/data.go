@@ -1,12 +1,16 @@
 package iex
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 )
 
 // NullString mirrors a sql.NullString
 type NullString struct{ sql.NullString }
+
+// NullNumber wraps a sql.NullFloat64 around a json.NullNumber
+type NullNumber struct{ sql.NullFloat64 }
 
 // UnmarshalJSON checks to see if a value is either null or empty
 func (ns *NullString) UnmarshalJSON(data []byte) error {
@@ -18,6 +22,25 @@ func (ns *NullString) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	ns.Valid = true
+	return nil
+}
+
+// UnmarshalJSON checks to see if a value is either a json.Number or empty string
+func (nn *NullNumber) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(data, []byte(`""`)) {
+		nn.Valid = false
+		return nil
+	}
+	var x *json.Number
+	if err := json.Unmarshal(data, &x); err != nil {
+		return err
+	}
+	this, err := x.Float64()
+	if err != nil {
+		return err
+	}
+	nn.Valid = true
+	nn.Float64 = this
 	return nil
 }
 
@@ -58,15 +81,15 @@ type PriceHistory struct {
 
 // Dividend type models a dividend event
 type Dividend struct {
-	DecDate NullString  `json:"declaredDate"`
-	ExDate  string      `json:"exDate"`
-	RecDate NullString  `json:"recordDate"`
-	PayDate NullString  `json:"paymentDate"`
-	Amount  json.Number `json:"amount"`
-	Flag    NullString  `json:"flag"`
-	Curr    NullString  `json:"currency"`
-	Desc    NullString  `json:"description"`
-	Freq    NullString  `json:"frequency"`
+	DecDate NullString `json:"declaredDate"`
+	ExDate  string     `json:"exDate"`
+	RecDate NullString `json:"recordDate"`
+	PayDate NullString `json:"paymentDate"`
+	Amount  NullNumber `json:"amount"`
+	Flag    NullString `json:"flag"`
+	Curr    NullString `json:"currency"`
+	Desc    NullString `json:"description"`
+	Freq    NullString `json:"frequency"`
 }
 
 // DividendHistory models dividends for a security

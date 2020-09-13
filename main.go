@@ -11,11 +11,11 @@ import (
 )
 
 var environment = app.Environment{
-	Host:     "sandbox.iexapis.com",
-	APIKey:   os.Getenv("IEXCLOUD_TEST"),
+	Host:     "cloud.iexapis.com",
+	APIKey:   os.Getenv("IEXCLOUD_SECRET"),
 	Lookback: "5y",
-	Duration: 63 * time.Millisecond,
-	DbURL:    os.Getenv("DATABASE_URL_TEST"),
+	Duration: 60 * time.Millisecond,
+	DbURL:    os.Getenv("DATABASE_URL_PROD"),
 }
 
 func main() {
