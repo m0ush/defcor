@@ -165,3 +165,93 @@ func (a *APIConnection) Splits(ctx context.Context, symbol string) (*SplitHistor
 	}
 	return &sh, nil
 }
+
+// IncomeStatements returns the Income Statement history for a stock
+func (a *APIConnection) IncomeStatements(ctx context.Context, symbol string) (*IncomeHistory, error) {
+	if err := a.rateLimiter.Wait(ctx); err != nil {
+		return nil, err
+	}
+	qparams := make(url.Values)
+	qparams.Set("token", a.apiKey)
+	qparams.Set("period", "quarter")
+	qparams.Set("last", a.lookback)
+	urlpath := path.Join("stock", symbol, "income")
+	endpoint := a.baseURL.ResolveReference(&url.URL{Path: urlpath})
+	request, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	request.URL.RawQuery = qparams.Encode()
+
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	log.Printf("income status: %s\n", resp.Status)
+	var income IncomeHistory
+	if err := json.NewDecoder(resp.Body).Decode(&income); err != nil {
+		return nil, err
+	}
+	return &income, nil
+}
+
+// BalanceSheets returns the Balance Sheet history for a stock
+func (a *APIConnection) BalanceSheets(ctx context.Context, symbol string) (*BalanceHistory, error) {
+	if err := a.rateLimiter.Wait(ctx); err != nil {
+		return nil, err
+	}
+	qparams := make(url.Values)
+	qparams.Set("token", a.apiKey)
+	qparams.Set("period", "quarter")
+	qparams.Set("last", a.lookback)
+	urlpath := path.Join("stock", symbol, "balance-sheet")
+	endpoint := a.baseURL.ResolveReference(&url.URL{Path: urlpath})
+	request, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	request.URL.RawQuery = qparams.Encode()
+
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	log.Printf("balance status: %s\n", resp.Status)
+	var balance BalanceHistory
+	if err := json.NewDecoder(resp.Body).Decode(&balance); err != nil {
+		return nil, err
+	}
+	return &balance, nil
+}
+
+// CashFlows returns the Cash Flow history for a stock
+func (a *APIConnection) CashFlows(ctx context.Context, symbol string) (*CashFlowHistory, error) {
+	if err := a.rateLimiter.Wait(ctx); err != nil {
+		return nil, err
+	}
+	qparams := make(url.Values)
+	qparams.Set("token", a.apiKey)
+	qparams.Set("period", "quarter")
+	qparams.Set("last", a.lookback)
+	urlpath := path.Join("stock", symbol, "cash-flow")
+	endpoint := a.baseURL.ResolveReference(&url.URL{Path: urlpath})
+	request, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	request.URL.RawQuery = qparams.Encode()
+
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	log.Printf("cashflow status: %s\n", resp.Status)
+	var cashflow CashFlowHistory
+	if err := json.NewDecoder(resp.Body).Decode(&cashflow); err != nil {
+		return nil, err
+	}
+	return &cashflow, nil
+}
