@@ -23,8 +23,8 @@ type Environment struct {
 	DbURL    string
 }
 
-// StartApplication creates an app
-func StartApplication(env Environment) (*Application, error) {
+// Start creates an app
+func Start(env Environment) (*Application, error) {
 	conn, err := db.CreateConn(env.DbURL)
 	if err != nil {
 		return nil, err
