@@ -4,6 +4,7 @@ import (
 	"context"
 	"defcor/db"
 	"defcor/iex"
+	"fmt"
 	"log"
 	"time"
 )
@@ -100,31 +101,126 @@ func (app *Application) Seed(symbols []string) error {
 
 // RefreshStocks add only new securities to the stocks table
 func (app *Application) RefreshStocks() error {
-	exists, err := app.DB.Stocks()
+	existing, err := app.DB.Stocks()
 	if err != nil {
 		return err
 	}
-	stocks, err := app.api.AllStocks(context.Background())
+	refreshed, err := app.api.AllStocks(context.Background())
 	if err != nil {
 		return err
 	}
-	newStocks := setDifference(exists, stocks)
-	if err := app.DB.InsertStocks(newStocks); err != nil {
-		return err
-	}
+	// newStocks := setDifference(existing, refreshed)
+	// if err := app.DB.InsertStocks(newStocks); err != nil {
+	// 	return err
+	// }
+	resolver := NewStockResolver(existing, refreshed)
+	resolver.DifferencesFormatted()
 	return nil
 }
 
-func setDifference(existing, recent []iex.Stock) []iex.Stock {
-	exists := make(map[iex.Stock]struct{}, len(existing))
-	for _, x := range existing {
-		exists[x] = struct{}{}
+func setDifference(A, B []iex.Stock) []iex.Stock {
+	SetA := make(map[iex.Stock]struct{}, len(A))
+	for _, x := range A {
+		SetA[x] = struct{}{}
 	}
 	var diff []iex.Stock
-	for _, x := range recent {
-		if _, found := exists[x]; !found {
+	for _, x := range B {
+		if _, found := SetA[x]; !found {
 			diff = append(diff, x)
 		}
 	}
 	return diff
+}
+
+// StockResolver is used to build sets for comparison between two Stock slices
+type StockResolver struct {
+	A []iex.Stock
+	B []iex.Stock
+}
+
+// NewStockResolver creates a stock resolver
+func NewStockResolver(existing, new []iex.Stock) StockResolver {
+	return StockResolver{
+		A: existing,
+		B: new,
+	}
+}
+
+// Differences returns the set differences of old and new stock data
+func (sr StockResolver) Differences() ([]iex.Stock, []iex.Stock) {
+	setA := make(map[iex.Stock]struct{}, len(sr.A))
+	for _, x := range sr.A {
+		setA[x] = struct{}{}
+	}
+	setB := make(map[iex.Stock]struct{}, len(sr.B))
+	for _, x := range sr.B {
+		setB[x] = struct{}{}
+	}
+	var ANotB []iex.Stock
+	for _, x := range sr.A {
+		if _, found := setB[x]; !found {
+			ANotB = append(ANotB, x)
+		}
+	}
+	var BNotA []iex.Stock
+	for _, x := range sr.B {
+		if _, found := setA[x]; !found {
+			BNotA = append(BNotA, x)
+		}
+	}
+	return ANotB, BNotA
+}
+
+// DifferencesFormatted provides a pretty printed version of the differences
+func (sr StockResolver) DifferencesFormatted() {
+	updates, a, b := sr.Reconcile()
+	fmt.Println("\nUpdates:")
+	for k, v := range updates {
+		fmt.Println("\nreconcile...")
+		fmt.Println("\tprev:", k)
+		fmt.Println("\tcurr:", v)
+	}
+	fmt.Println("\nEnds:")
+	for i, s := range a {
+		fmt.Printf("%2d: %v\n", i, s)
+	}
+	fmt.Println("\nAdds:")
+	for i, s := range b {
+		fmt.Printf("%2d: %v\n", i, s)
+	}
+}
+
+// Reconcile finds securities that need to be updated, added, or set to inactive
+func (sr StockResolver) Reconcile() (map[iex.Stock]iex.Stock, []iex.Stock, []iex.Stock) {
+	a, b := sr.Differences()
+	mapA := make(map[string]int)
+	for i, s := range a {
+		mapA[s.IexID] = i
+	}
+	mapB := make(map[string]int)
+	for i, s := range b {
+		mapB[s.IexID] = i
+	}
+	var aRev []iex.Stock
+	var tempB []iex.Stock
+	updates := make(map[iex.Stock]iex.Stock)
+	for k, idxa := range mapA {
+		if idxb, ok := mapB[k]; ok {
+			updates[a[idxa]] = b[idxb]
+			tempB = append(tempB, b[idxb])
+		} else {
+			aRev = append(aRev, a[idxa])
+		}
+	}
+	setBprime := make(map[iex.Stock]struct{}, len(tempB))
+	for _, x := range tempB {
+		setBprime[x] = struct{}{}
+	}
+	var BNotBprime []iex.Stock
+	for _, x := range b {
+		if _, found := setBprime[x]; !found {
+			BNotBprime = append(BNotBprime, x)
+		}
+	}
+	return updates, aRev, BNotBprime
 }
