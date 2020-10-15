@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"strconv"
 )
 
 // NullString mirrors a sql.NullString
@@ -62,18 +63,51 @@ type NullInt64 struct{ sql.NullInt64 }
 // 	return nil
 // }
 
+// JSONStock represents a single Stock in it's json form
+type JSONStock struct {
+	Symbol string `json:"symbol"`
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	IexID  string `json:"iexId"`
+	Region string `json:"region"`
+	Curr   string `json:"currency"`
+	Figi   string `json:"figi"`
+	Cik    string `json:"cik"`
+}
+
+func (js JSONStock) ToStock() Stock {
+	cikint, _ := strconv.Atoi(js.Cik)
+	return Stock{
+		js.Symbol,
+		js.Name,
+		js.Type,
+		js.IexID,
+		js.Region,
+		js.Curr,
+		js.Figi,
+		cikint,
+	}
+}
+
 // Stock represents a single Stock
 type Stock struct {
-	Symbol   string `json:"symbol"`
-	Name     string `json:"name"`
-	Date     string `json:"date"`
-	Type     string `json:"type"`
-	IexID    string `json:"iexId"`
-	Region   string `json:"region"`
-	Curr     string `json:"currency"`
-	IsActive bool   `json:"isEnabled"`
-	Figi     string `json:"figi"`
-	Cik      string `json:"cik"`
+	Symbol string
+	Name   string
+	Type   string
+	IexID  string
+	Region string
+	Curr   string
+	Figi   string
+	Cik    int
+}
+
+func (s *Stock) UnmarshalJSON(data []byte) error {
+	var js JSONStock
+	if err := json.Unmarshal(data, &js); err != nil {
+		return err
+	}
+	*s = js.ToStock()
+	return nil
 }
 
 // Prices type models daily price data
@@ -106,7 +140,6 @@ type Dividend struct {
 	Amount  NullNumber `json:"amount"`
 	Flag    NullString `json:"flag"`
 	Curr    NullString `json:"currency"`
-	Desc    NullString `json:"description"`
 	Freq    NullString `json:"frequency"`
 }
 
@@ -125,10 +158,8 @@ func (dh DividendHistory) IsEmpty() bool {
 type Split struct {
 	DecDate    NullString `json:"declaredDate"`
 	ExDate     string     `json:"exDate"`
-	Ratio      float64    `json:"ratio"`
 	ToFactor   float64    `json:"toFactor"`
 	FromFactor float64    `json:"fromFactor"`
-	Desc       NullString `json:"description"`
 }
 
 // SplitHistory models splits for a security

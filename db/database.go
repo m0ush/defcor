@@ -6,9 +6,12 @@ import (
 	"defcor/iex"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 )
+
+var tfmt = "2006-01-02"
 
 // Conn type stores a postgres database connection
 type Conn struct {
@@ -32,14 +35,15 @@ func (c *Conn) Close() error {
 // InsertStock inserts a stock record into a database
 func (c *Conn) InsertStock(s iex.Stock) (int, error) {
 	sql := `INSERT INTO stocks (
-		symbol, name, date_added, active, sectype, iexid, figi, currency, region, cik
+		symbol, name, date_added, sectype, iexid, figi, currency, region, cik
 	)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	RETURNING secid`
+	today := time.Now().Format(tfmt)
 
 	var secid int
 	if err := c.c.QueryRow(context.Background(), sql,
-		s.Symbol, s.Name, s.Date, s.IsActive, s.Type, s.IexID, s.Figi, s.Curr, s.Region, s.Cik,
+		s.Symbol, s.Name, today, s.Type, s.IexID, s.Figi, s.Curr, s.Region, s.Cik,
 	).Scan(&secid); err != nil {
 		return -1, err // -1 is an invalid secid
 	}
@@ -60,7 +64,7 @@ func (c *Conn) InsertStocks(stks []iex.Stock) error {
 
 // Symbols returns a list of all symbols in the stocks table
 func (c *Conn) Symbols() ([]string, error) {
-	sql := `SELECT symbol FROM stocks`
+	sql := `SELECT symbol FROM stocks WHERE date_inactive IS NULL`
 	rows, err := c.c.Query(context.Background(), sql)
 	if err != nil {
 		return nil, err
@@ -83,7 +87,7 @@ func (c *Conn) Symbols() ([]string, error) {
 
 // Stocks returns the entire stock db
 func (c *Conn) Stocks() ([]iex.Stock, error) {
-	sql := `SELECT * FROM stocks`
+	sql := `SELECT symbol, name, sectype, iexid, figi, currency, region, cik FROM stocks WHERE date_inactive IS NULL`
 	rows, err := c.c.Query(context.Background(), sql)
 	if err != nil {
 		return nil, err
@@ -92,11 +96,13 @@ func (c *Conn) Stocks() ([]iex.Stock, error) {
 
 	var stks []iex.Stock
 	for rows.Next() {
-		var stk iex.Stock
-		if err := rows.Scan(&stk); err != nil {
+		var s iex.Stock
+		if err := rows.Scan(
+			&s.Symbol, &s.Name, &s.Type, &s.IexID, &s.Figi, &s.Curr, &s.Region, &s.Cik,
+		); err != nil {
 			return nil, err
 		}
-		stks = append(stks, stk)
+		stks = append(stks, s)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -139,26 +145,22 @@ func (c *Conn) InsertPriceHistory(ph *iex.PriceHistory) error {
 		if err != nil {
 			return fmt.Errorf("insertion error: %s(price:%v)", ph.Symbol, p)
 		}
-		// log.Printf("%s price: %s c: %v v: %v\n", ph.Symbol, p.Date, p.Aclose, p.Avolume)
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
-	// log.Printf("%s prices complete\n", ph.Symbol)
 	return nil
 }
 
 // InsertDividendHistory inserts a stock's historical dividends into the dividends table
 func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
-	// Do not insert if there's no dividend history
 	if dh.IsEmpty() {
-		// log.Printf("%s no dividends\n", dh.Symbol)
 		return nil
 	}
 	sql := `INSERT INTO dividends
-		(secid, decdate, exdate, recdate, paydate, amount, flag, currency, frequency, description)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+		(secid, decdate, exdate, recdate, paydate, amount, flag, currency, frequency)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
 	secid, err := c.FindSecurityID(dh.Symbol)
 	if err != nil {
@@ -172,32 +174,26 @@ func (c *Conn) InsertDividendHistory(dh *iex.DividendHistory) error {
 	defer tx.Rollback(context.Background())
 	for _, d := range dh.Dividends {
 		_, err = tx.Exec(context.Background(), sql,
-			secid, d.DecDate, d.ExDate, d.RecDate, d.PayDate, d.Amount, d.Flag, d.Curr, d.Freq, d.Desc,
+			secid, d.DecDate, d.ExDate, d.RecDate, d.PayDate, d.Amount, d.Flag, d.Curr, d.Freq,
 		)
 		if err != nil {
 			return fmt.Errorf("insertion error: %s(dividend:%v)", dh.Symbol, d)
 		}
-		// log.Printf("%s dividend: %s %s\n", dh.Symbol, d.ExDate, d.Amount)
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
-	// log.Printf("%s dividends complete\n", dh.Symbol)
 	return nil
 }
 
 // InsertSplitHistory inserts a stock's historical stock splits into the splits table
 func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
-	// Don't insert if there's no split history
 	if sh.IsEmpty() {
-		// log.Printf("%s no splits\n", sh.Symbol)
 		return nil
 	}
-	sql := `INSERT INTO splits(
-		secid, decdate, exdate, ratio, tofactor, fromfactor, description
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	sql := `INSERT INTO splits(secid, decdate, exdate, tofactor, fromfactor)
+		VALUES ($1, $2, $3, $4, $5)`
 
 	secid, err := c.FindSecurityID(sh.Symbol)
 	if err != nil {
@@ -211,18 +207,16 @@ func (c *Conn) InsertSplitHistory(sh *iex.SplitHistory) error {
 	defer tx.Rollback(context.Background())
 	for _, s := range sh.Splits {
 		_, err = tx.Exec(context.Background(), sql,
-			secid, s.DecDate, s.ExDate, s.Ratio, s.ToFactor, s.FromFactor, s.Desc,
+			secid, s.DecDate, s.ExDate, s.ToFactor, s.FromFactor,
 		)
 		if err != nil {
 			return fmt.Errorf("insertion error: %s(split:%v)", sh.Symbol, s)
 		}
-		// log.Printf("%s split: %s %v-to-%v\n", sh.Symbol, s.ExDate, s.FromFactor, s.ToFactor)
 	}
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
-	// log.Printf("%s splits complete\n", sh.Symbol)
 	return nil
 }
 
@@ -239,8 +233,8 @@ func nullString(s string) sql.NullString {
 // TestDivInsert tests to make sure dividends are inserted well
 func (c *Conn) TestDivInsert(i int, ds []iex.Dividend) error {
 	sql := `INSERT INTO dividends
-		(secid, decdate, exdate, recdate, paydate, amount, flag, currency, frequency, description)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+		(secid, decdate, exdate, recdate, paydate, amount, flag, currency, frequency)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 	tx, err := c.c.Begin(context.Background())
 	if err != nil {
 		return err
@@ -248,7 +242,7 @@ func (c *Conn) TestDivInsert(i int, ds []iex.Dividend) error {
 	defer tx.Rollback(context.Background())
 	for _, d := range ds {
 		_, err = tx.Exec(context.Background(), sql,
-			i, d.DecDate, d.ExDate, d.RecDate, d.PayDate, d.Amount, d.Flag, d.Curr, d.Freq, d.Desc,
+			i, d.DecDate, d.ExDate, d.RecDate, d.PayDate, d.Amount, d.Flag, d.Curr, d.Freq,
 		)
 		if err != nil {
 			return fmt.Errorf("Error on insert %v", d)

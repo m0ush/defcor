@@ -60,7 +60,7 @@ func (a *APIConnection) AllStocks(ctx context.Context) ([]Stock, error) {
 	}
 	defer resp.Body.Close()
 
-	var stks []Stock
+	var stks []JSONStock
 	if err := json.NewDecoder(resp.Body).Decode(&stks); err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (a *APIConnection) AllStocks(ctx context.Context) ([]Stock, error) {
 		if len(s.Cik) == 0 || !re.MatchString(s.Type) {
 			continue
 		}
-		fstks = append(fstks, s)
+		fstks = append(fstks, s.ToStock())
 	}
 	return fstks, nil
 }
