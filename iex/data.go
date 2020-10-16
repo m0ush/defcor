@@ -75,6 +75,7 @@ type JSONStock struct {
 	Cik    string `json:"cik"`
 }
 
+// ToStock converts a JSONStock to a Stock
 func (js JSONStock) ToStock() Stock {
 	cikint, _ := strconv.Atoi(js.Cik)
 	return Stock{
@@ -101,6 +102,7 @@ type Stock struct {
 	Cik    int
 }
 
+// UnmarshalJSON converts a JSONStock to a Stock
 func (s *Stock) UnmarshalJSON(data []byte) error {
 	var js JSONStock
 	if err := json.Unmarshal(data, &js); err != nil {
@@ -109,6 +111,9 @@ func (s *Stock) UnmarshalJSON(data []byte) error {
 	*s = js.ToStock()
 	return nil
 }
+
+// StockGroup is a slice of Stock
+type StockGroup []Stock
 
 // Prices type models daily price data
 type Prices struct {
